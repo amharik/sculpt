@@ -2,10 +2,14 @@ module SculptProxyBuilder
   extend self
 
   def build klass, options={}
+    klass_name = "#{klass}SculptProxy"
+    if Struct.const_defined? klass_name
+      Struct.send :remove_const, klass_name
+    end
     whitelisted_methods = options[:members] || []
     module_methods = options[:methods] || []
     include_modules = options[:include_modules] || []
-    obj_proxy  = Struct.new("#{klass}SculptProxy", *whitelisted_methods) do
+    obj_proxy  = Struct.new(klass_name, *whitelisted_methods) do
       @module_methods = module_methods
 
       def self.module_methods

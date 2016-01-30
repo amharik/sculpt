@@ -13,12 +13,12 @@ module Sculptor
   module ClassMethods
 
     def start_to_sculpt template_file_path=nil
-      puts "** inting sculpt #{template_file_path}**"
+      puts "** inting sculpt #{template_file_path.inspect}**"
       template = {}
       if template_file_path.present?
         template = File.exists?(template_file_path) ?  YAML::load_file(template_file_path).with_indifferent_access : {}
-        puts "** template is #{template}**"
-        template.each{|model, methods| sculpt_for model, methods}
+        puts "** template is #{template.inspect}**"
+        template.each{|model, methods| sculpt_for(model, methods)}
       end
     end
 
@@ -51,9 +51,10 @@ module Sculptor
     def node attr_name=nil, &blk
       if attr_name.present?
         @node ||= {}
+        @attribute ||= []
         @attribute << attr_name
         @node[attr_name.to_sym] = blk
-        puts "~~~  Setting node as #{@node}"
+        puts "~~~  Setting node as #{@node.inspect}"
       else
         @node || {}
       end
@@ -61,17 +62,18 @@ module Sculptor
 
     def sculpt_attrs_for obj
       klass = obj.class
-      puts "*** #{instance_var_name} [#{obj.class}]***"
+      puts "*** #{instance_var_name} [#{obj.class.inspect}]***"
       sculpt_defn = klass.read_inheritable_attribute(instance_var_name) || {}
       wrap_type = sculpt_defn[:template]
-      methods = sculpt_defn[:methods]
+      methods = sculpt_defn[:methods] || []
+      node = sculpt_defn[:node] || {}
       #wrap_type = defn[klass.to_s.underscore] || defn[klass.superclass.to_s.underscore]
       return nil if wrap_type.nil?
 
       fields  = wrap_type.members.map do |x|
         x=x.to_sym
         v = nil
-        if self.node.has_key? x
+        if node.has_key? x
           v = obj.instance_eval(&node[x])
         elsif obj.respond_to? x
             v = obj.send(x)
@@ -123,18 +125,18 @@ module Sculptor
 
       def sculpt_for model, methods
         klass = model.to_s.classify.constantize
-        whitelisted_methods = []
-        include_modules = []
-        module_methods = []
+        ivar = klass.read_inheritable_attribute(instance_var_name) || {}
+        template = ivar[:template]
+        whitelisted_methods = template.try(:members) || []
+        include_modules = ivar[:modules] || []
+        module_methods = ivar[:methods] || []
+
         methods.each do |m|
           if m.is_a?(Hash)
             if m[:include].present?
               include_module = m[:include]
               include_modules << include_module
               module_methods << include_module.instance_methods.map(&:to_sym)
-            else
-              # handle annonymous
-              # handle alias case
             end
           else
             whitelisted_methods << m
@@ -146,6 +148,7 @@ module Sculptor
         klass.write_inheritable_attribute(instance_var_name,{
           :template => obj_proxy,
           :node => self.node,
+          :module => include_modules,
           :methods =>  module_methods
         })
       end
