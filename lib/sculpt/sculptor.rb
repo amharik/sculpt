@@ -71,10 +71,9 @@ module Sculptor
       fields  = wrap_type.members.map do |x|
         x=x.to_sym
         v = nil
-        if obj.respond_to? x
-          if self.node.has_key? x
-            v = obj.instance_eval(&node[x])
-          else
+        if self.node.has_key? x
+          v = obj.instance_eval(&node[x])
+        elsif obj.respond_to? x
             v = obj.send(x)
             v = case v
                 when Array, ActiveRecord::Associations::AssociationCollection  then
@@ -96,7 +95,6 @@ module Sculptor
                     nil
                   end
                 end
-          end
         else
           puts "Method '#{x}'  not found on object '#{obj}'"
         end
@@ -145,7 +143,6 @@ module Sculptor
         module_methods.flatten!
         puts "*** Modules #{include_modules.inspect} Module methods '#{module_methods.inspect}' Whitelist '#{whitelisted_methods.inspect}'***"
         obj_proxy  = SculptProxyBuilder.build klass, :members => whitelisted_methods, :methods => module_methods, :modules => include_modules
-        @attribute = module_methods
         klass.write_inheritable_attribute(instance_var_name,{
           :template => obj_proxy,
           :node => self.node,
