@@ -6,24 +6,33 @@ Rabl for models
 
 Add this line to your application's Gemfile:
 
-    gem 'sculpt'
+  ```bash
+  gem 'sculpt'
+  ```
 
 And then execute:
 
-    $ bundle
+  ```bash
+  $ bundle
+  ```
 
 Or install it yourself as:
 
-    $ gem install sculpt
+  ```bash
+  $ gem install sculpt
+  ```
 
 ## Usage
 
-1. Add the below line to your rails initializer 
+1. Add the below line to your rails initializer */config/initializers/sculpt.rb*
+
   ```ruby
   Sculpt::Sculpt.start_to_sculpt Rails.root.join('config', 'sculpt.yml')
   ```
+
 2. Define sculpt.yml file to contain the whitelist of models
-  ```yml
+
+  ```yaml
   purchase:
     - customer
     - number
@@ -36,32 +45,39 @@ Or install it yourself as:
   customer:
     - name
   ```
+
 3. To get a safe representation of Model object call `sculpt` on it.
+
   ```ruby
   >> purchase = Purchase.find('863225074960405')
   >> safe_purchase_obj = purchase.sculpt
-  => #<struct Struct::PurchaseSculptProxy customer=#<struct Struct::CustomerSculptProxy name="awesome">,
-      number="863225074960405",
-      order_items=[#<struct Struct::OrderItemSculptProxy product_title="Sage of Six Paths,  black", price="2400.00">,
-      #<struct Struct::OrderItemSculptProxy product_title="Uchiha Itachi", price="396.00">],
-      status="in_checkout", total="2796.00">
+  => #<struct Struct::PurchaseSculptProxy customer=#<struct Struct::CustomerSculptProxy name="awesome">, number="863225074960405", ...,status="in_checkout", total="2796.00">
   ```
-  > `Note:` Only whitelisted methods can be called on the object
+
+  > `Note` Only whitelisted methods can be called on the object
 
   ```ruby
   >> safe_purchase_obj.non_existent_method
-  => nil
-
-  >> safe_purchase_obj.non_existent_method
   => NoMethodError: undefined method `non_existent_method'
+  ```
 
+  ```ruby
   >> safe_purchase_obj.number
   => "863225074960405"
+  ```
 
+  ```ruby
   >> safe_purchase_obj.order_items.map(&:price)
   => ["2400.00", "396.00"]
-
   ```
+
+  > `Info` to_h method returns Hash of whitelisted methods => values
+
+  ```ruby
+  >> safe_purchase_obj.to_h
+  => {:status=>"in_checkout", :order_items=>[..], :total=>"2796.00", :number=>"863225074960405", :customer=>'..'}
+  ```
+
 
 ## Contributing
 
