@@ -1,0 +1,11 @@
+purchase:
+  - customer
+  - number
+  - order_items
+  - status
+  - total
+order_item:
+  - product_title
+  - price
+customer:
+  - name
